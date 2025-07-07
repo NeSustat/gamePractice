@@ -19,7 +19,7 @@ int randomBySeed(int seed, int a, int b)
 
 void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
-    int bufferColumn[3][2];
+    int bufferColumn[3];
     int countLine = 0;
     bool found = false;
 
@@ -27,8 +27,7 @@ void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
     {
         if (table[i][j][0] != value && table[i][j][0] != 0)
         {
-            bufferColumn[countLine][0] = table[i][j][1];
-            bufferColumn[countLine][2] = table[i][j][2];
+            bufferColumn[countLine] = table[i][j][1];
             countLine++;
         } else if (diceArr[table[i][j][1]] != nullptr && table[i][j][0] == value)
         {
@@ -46,19 +45,12 @@ void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
         table[i][j][0] = 0;
         table[i][j][1] = 0;
     }
-    // for (int j = 0; j < countLine && countLine != 0; j++)
-    // {
-    //     table[i][j][0] = diceArr[bufferColumn[j]]->getValue();
-    //     table[i][j][1] = bufferColumn[j];
-    //     diceArr[bufferColumn[j]]->setPosition(table[i][j][2], table[i][j][3]);
-    // }
     for (int j = 0; j < countLine && countLine != 0; j++)
     {
-        table[i][j][0] = diceArr[bufferColumn[j][0]]->getValue();
-        table[i][j][1] = bufferColumn[j][0];
-        diceArr[bufferColumn[j][0]]->moveDice(0.0f,(table[i][j][3] - bufferColumn[j][1]) / 1000.0f, 1000); 
+        table[i][j][0] = diceArr[bufferColumn[j]]->getValue();
+        table[i][j][1] = bufferColumn[j];
+        diceArr[bufferColumn[j]]->setPosition(table[i][j][2], table[i][j][3]);
     }
-    setPosMap(table, diceArr);
 }
 
 void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
@@ -120,12 +112,8 @@ void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice,
 int main()
 {   
     RectangleShape rollDice({100, 100});
-    rollDice.setFillColor(Color::Red); // Добавьте эту строку
+    rollDice.setFillColor(Color::Red);
     Texture texture;
-
-    // RectangleShape logo({50,50});
-    // Texture logoTexture;
-    // logo.setTexture("pic/dice.png");
 
 // стол на котором будет лежать кубик
     RectangleShape tableEnemy({200, 200});
@@ -224,7 +212,6 @@ int main()
                             {
                                 playerTable[i][j][0] = diceArr[countDice]->getValue();
                                 playerTable[i][j][1] = countDice;
-                                setPosMap(playerTable, diceArr);
                                 // diceArr[countDice]->setPosition(playerTable[i][j][2], playerTable[i][j][3]);
                                 removeDice(diceArr[countDice]->getValue(), i, enemyTable, diceArr);
                                 // setPosMap(playerTable, diceArr);
@@ -273,19 +260,18 @@ int main()
                             rollDice, texture, textureTimer);
         }
                       
-        if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1500)
+        if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1000)
         {
             bool flag = true;
             for (int i = 0; i < 3 && flag; i++)
             {
                 for (int j = 0; j < 3 && flag; j++)
                 {
-                    if (enemyTable[i][j][0] == 0)
+                    if (enemyTable[j][i][0] == 0)
                     {
-                        enemyTable[i][j][0] = diceArr[countDice]->getValue();
-                        enemyTable[i][j][1] = countDice;
+                        enemyTable[j][i][0] = diceArr[countDice]->getValue();
+                        enemyTable[j][i][1] = countDice;
                         // diceArr[countDice]->setPosition(enemyTable[i][j][2], enemyTable[i][j][3]);
-                        setPosMap(enemyTable, diceArr);
                         removeDice(diceArr[countDice]->getValue(), i, playerTable, diceArr);
                         // setPosMap(enemyTable, diceArr);
                         countDice++;
@@ -298,8 +284,8 @@ int main()
             }
         }
 
-        // setPosMap(playerTable, diceArr);
-        // setPosMap(enemyTable, diceArr);
+        setPosMap(playerTable, diceArr);
+        setPosMap(enemyTable, diceArr);
 
 // рисунки
         window.clear(Color::White);
