@@ -109,10 +109,45 @@ void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice,
     }
 }
 
+int setColor(int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
+{
+    int count = 0;
+    int arr[6][4] = 
+    {
+        {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}
+    };
+    for (int j = 0; j < 3; j++)
+    {
+        arr[table[i][j][0] - 1][0]++;
+        for (int k = 1; k <=3; k++)
+        {
+            if (arr[table[i][j][0] - 1][k] == 0)
+            {
+                arr[table[i][j][0] - 1][k] = table[i][j][1];
+                break;
+            }
+        }
+    }
+    for (int j = 0; j < 6; j++)
+    {
+        if (arr[j][0] != 0)
+        {
+            for (int k = 1; k <= arr[j][0]; k++)
+            {
+                diceArr[arr[j][k]]->setColor(arr[j][0]);
+            }
+        }
+        count += (arr[j][0] * (j + 1)) * arr[j][0];
+    }
+    return count;
+}
+
 int main()
 {   
+    Font font("C:/Windows/Fonts/consola.ttf");
+
     RectangleShape rollDice({100, 100});
-    rollDice.setFillColor(Color::Red);
+    rollDice.setFillColor(Color::White);
     Texture texture;
 
 // стол на котором будет лежать кубик
@@ -158,6 +193,12 @@ int main()
     unsigned int hightWin = 1000;
     unsigned int widthWin = 1200;
     RenderWindow window(VideoMode({widthWin, hightWin}), "Dice game");
+    RectangleShape endDisplay({widthWin, hightWin});
+    endDisplay.setFillColor(Color(0, 0, 0, 200));
+
+    Image icon({32, 32});
+    icon.loadFromFile("pic/dice.png");
+    window.setIcon(icon);
     
     int playerTable[3][3][4] = 
     { 
@@ -183,6 +224,32 @@ int main()
     int countDice = 1;
 
     bool needNewDice = true;
+
+    Text wonPlayer(font, "You won! :)", 72);
+    wonPlayer.setFillColor(Color::White);
+    wonPlayer.setPosition({400, (hightWin / 2) - 200.0f});
+
+    Text wonEnemy(font, "You lose! :(", 72);
+    wonEnemy.setFillColor(Color::White);
+    wonEnemy.setPosition({380, (hightWin / 2) - 200.0f});
+
+    Text draw(font, "draw :|", 72);
+    draw.setFillColor(Color::White);
+    draw.setPosition({450, (hightWin / 2) - 200.0f});
+
+    int countScorePlayer = 0;
+    Text scorePlayer(font, std::to_string(countScorePlayer), 100);
+    scorePlayer.setFillColor(Color::Black);
+    FloatRect boundsPlayer = scorePlayer.getLocalBounds();
+    scorePlayer.setOrigin(boundsPlayer.getCenter());
+    scorePlayer.setPosition({210, 600});
+
+    int countScoreEnemy = 0;
+    Text scoreEnemy(font, std::to_string(countScoreEnemy), 100);
+    scoreEnemy.setFillColor(Color::Black);
+    FloatRect boundsEnemy = scoreEnemy.getLocalBounds();
+    scoreEnemy.setOrigin(boundsEnemy.getCenter());
+    scoreEnemy.setPosition({990, 410});
 
     bool moveRollDice = true;
 
@@ -226,66 +293,75 @@ int main()
                 }
             }
         }
-        coutPlayerWon = 0;
-        countEnemyWon = 0;
-        for (int i = 0; i < 3; i++)
+        if (coutPlayerWon != 9 && countEnemyWon != 9)
         {
-            for (int j = 0; j < 3; j++)
+            coutPlayerWon = 0;
+            countEnemyWon = 0;
+            countScorePlayer = 0;
+            countScoreEnemy = 0;
+            for (int i = 0; i < 3; i++)
             {
-                if (playerTable[i][j][0] != 0)
+                if (playerTable[i][0][0] != 0)
                 {
-                    coutPlayerWon++;
+                    countScorePlayer += setColor(i, playerTable, diceArr);
                 }
-                if (enemyTable[i][j][0] != 0)
+                if (enemyTable[i][0][0] != 0)
                 {
-                    countEnemyWon++;
+                    countScoreEnemy += setColor(i, enemyTable, diceArr);
                 }
-            }
-        }
-
-        if (coutPlayerWon == 9)
-        {
-            window.close();
-        }
-
-        if (countEnemyWon == 9)
-        {
-            window.close();
-        }
-
-        if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500)
-        {
-            rollDiceF(turn, needNewDice, moveRollDice, 
-                        countDice, randomSeed, randomSeedDice, diceArr, dilayEnemy,
-                            rollDice, texture, textureTimer);
-        }
-                      
-        if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1000)
-        {
-            bool flag = true;
-            for (int i = 0; i < 3 && flag; i++)
-            {
-                for (int j = 0; j < 3 && flag; j++)
+                for (int j = 0; j < 3; j++)
                 {
-                    if (enemyTable[j][i][0] == 0)
+                    if (playerTable[i][j][0] != 0)
                     {
-                        enemyTable[j][i][0] = diceArr[countDice]->getValue();
-                        enemyTable[j][i][1] = countDice;
-                        // diceArr[countDice]->setPosition(enemyTable[i][j][2], enemyTable[i][j][3]);
-                        removeDice(diceArr[countDice]->getValue(), i, playerTable, diceArr);
-                        // setPosMap(enemyTable, diceArr);
-                        countDice++;
-                        turn = true;
-                        needNewDice = true;
-                        flag = false;
-                        dilayEnemy.restart();
+                        coutPlayerWon++;
+                    }
+                    if (enemyTable[i][j][0] != 0)
+                    {
+                        countEnemyWon++;
                     }
                 }
             }
-        }
+            scorePlayer.setString(std::to_string(countScorePlayer));
+            boundsPlayer = scorePlayer.getLocalBounds();
+            scorePlayer.setOrigin(boundsPlayer.getCenter());
+            scoreEnemy.setString(std::to_string(countScoreEnemy));
+            boundsEnemy = scoreEnemy.getLocalBounds();
+            scoreEnemy.setOrigin(boundsEnemy.getCenter());
 
-        setPosMap(playerTable, diceArr);
-        setPosMap(enemyTable, diceArr);
+            if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500)
+            {
+                rollDiceF(turn, needNewDice, moveRollDice, 
+                            countDice, randomSeed, randomSeedDice, diceArr, dilayEnemy,
+                                rollDice, texture, textureTimer);
+            }
+                        
+            if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1000)
+            {
+                bool flag = true;
+                for (int j = 0; j < 3 && flag; j++)
+                {
+                    for (int i = 0; i < 3 && flag; i++)
+                    {
+                        if (enemyTable[i][j][0] == 0)
+                        {
+                            enemyTable[i][j][0] = diceArr[countDice]->getValue();
+                            enemyTable[i][j][1] = countDice;
+                            // diceArr[countDice]->setPosition(enemyTable[i][j][2], enemyTable[i][j][3]);
+                            removeDice(diceArr[countDice]->getValue(), i, playerTable, diceArr);
+                            // setPosMap(enemyTable, diceArr);
+                            countDice++;
+                            turn = true;
+                            needNewDice = true;
+                            flag = false;
+                            dilayEnemy.restart();
+                        }
+                    }
+                }
+            }
+
+            setPosMap(playerTable, diceArr);
+            setPosMap(enemyTable, diceArr);
+        }
 
 // рисунки
         window.clear(Color::White);
@@ -318,7 +394,22 @@ int main()
                 }
             }
         }
-
+        window.draw(scorePlayer);
+        window.draw(scoreEnemy);
+        if ((coutPlayerWon == 9 || countEnemyWon == 9) || true)
+        {
+            window.draw(endDisplay);
+            if (countScoreEnemy == countScorePlayer)
+            {
+                window.draw(draw);
+            } else if (countScoreEnemy > countScorePlayer)
+            {
+                window.draw(wonEnemy);
+            } else 
+            {
+                window.draw(wonPlayer);
+            }
+        }
         window.display();
     }
     for (int i = 0; i < quantityDice; i++) {

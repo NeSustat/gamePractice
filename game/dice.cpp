@@ -4,7 +4,7 @@
 Dice::Dice(int seed) : value(1){
     Dice::roll(seed);
     shape.setSize(sf::Vector2f(100, 100));
-    shape.setFillColor(sf::Color::Red);
+    shape.setFillColor(sf::Color::White);
 
     std::string filename = "pic/dice" + std::to_string(value) + ".png";
     if (texture.loadFromFile(filename)) {
@@ -27,4 +27,19 @@ void Dice::setPosition(float x, float y){
 
 void Dice::draw(sf::RenderWindow &window) const{
     window.draw(shape);
+}
+
+void Dice::setColor(int i){
+    switch (i)
+    {
+    case 2:
+        shape.setFillColor(sf::Color::Yellow);
+        break;
+    case 3:
+        shape.setFillColor(sf::Color::Blue);
+        break;
+    default:
+        shape.setFillColor(sf::Color::White);
+        break;
+    }
 }
