@@ -4,6 +4,7 @@
 
 using namespace sf;
 
+// случайное число
 int random(int a, int b)
 {
     std::random_device rd;
@@ -11,12 +12,14 @@ int random(int a, int b)
     return std::uniform_int_distribution<int>(a, b)(gen);
 }
 
+// случайное число с заданным зерном
 int randomBySeed(int seed, int a, int b)
 {
     std::mt19937 gen(seed);
     return std::uniform_int_distribution<int>(a, b)(gen);
 }
 
+// определяет какие кубики надо удалить и сдвигает те который удалять не надо
 void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
     int bufferColumn[3];
@@ -53,6 +56,7 @@ void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
     }
 }
 
+// выставляет кубик в ячейки
 void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
     for (int i = 0; i < 3; i++)
@@ -64,6 +68,7 @@ void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
     }
 }
 
+// отрисовывает вращение кубика при броске
 void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice, 
     int &countDice, int &randomSeed, int &randomSeedDice, Dice* (&diceArr)[200], Clock &dilayEnemy,
         RectangleShape &rollDice, Texture &texture, Clock &textureTimer)
@@ -109,6 +114,7 @@ void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice,
     }
 }
 
+// меняет цвет кубиков если их несколько в столбце и считает сколько очков в столбце
 int setColor(int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
     int count = 0;
@@ -142,9 +148,10 @@ int setColor(int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
     return count;
 }
 
+// основная функция
 int main()
 {   
-    Font font("C:/Windows/Fonts/consola.ttf");
+    Font font("C:/Windows/Fonts/consola.ttf"); // шрифт
 
     RectangleShape rollDice({100, 100});
     rollDice.setFillColor(Color::White);
@@ -196,10 +203,12 @@ int main()
     RectangleShape endDisplay({widthWin, hightWin});
     endDisplay.setFillColor(Color(0, 0, 0, 200));
 
+    // иконка приложения
     Image icon({32, 32});
     icon.loadFromFile("pic/dice.png");
     window.setIcon(icon);
     
+    // массивы для определения игровых полей
     int playerTable[3][3][4] = 
     { 
         {{0, 0, 425, 620}, {0, 0, 425, 730}, {0, 0, 425, 840}},
@@ -214,6 +223,7 @@ int main()
         {{0, 0, 665, 280}, {0, 0, 665, 170}, {0, 0, 665, 60}}
     };
 
+    // блок переменных 
     Clock dilayEnemy;
     Clock textureTimer;
 
