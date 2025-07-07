@@ -11,6 +11,12 @@ int random(int a, int b)
     return std::uniform_int_distribution<int>(a, b)(gen);
 }
 
+int randomBySeed(int seed, int a, int b)
+{
+    std::mt19937 gen(seed);
+    return std::uniform_int_distribution<int>(a, b)(gen);
+}
+
 void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
     int bufferColumn[3];
@@ -45,48 +51,7 @@ void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
         table[i][j][1] = bufferColumn[j];
         diceArr[bufferColumn[j]]->setPosition(table[i][j][2], table[i][j][3]);
     }
-    // for (int j = 0; j < countLine && countLine != 0; j++)
-    // {
-    //     table[i][j][0] = diceArr[bufferColumn[j]]->getValue();
-    //     table[i][j][1] = bufferColumn[j];
-    //     diceArr[bufferColumn[j]]->setPosition(table[i][j][2], table[i][j][3]);
-    // }
 }
-
-// void removeDiceEnemy(int value, int i, int (&enemyTable)[3][3][2], Dice* (&diceArr)[200])
-// {
-//     int bufferColumn[3];
-//     int countLine = 0;
-//     bool found = false;
-//     for (int j = 0; j < 3; j++)
-//     {
-//         if (enemyTable[i][j][0] != value)
-//         {
-//             bufferColumn[countLine] = enemyTable[i][j][1];
-//             countLine++;
-//         } else if (diceArr[enemyTable[i][j][1]] != nullptr && enemyTable[i][j][0] == value)
-//         {
-//             delete diceArr[enemyTable[i][j][1]];
-//             diceArr[enemyTable[i][j][1]] = nullptr;
-//             found = true;
-//         }
-//     }
-//     if (!found)
-//     {
-//         return;
-//     }
-//     for (int j = 0; j < 3; j++) 
-//     {
-//         enemyTable[i][j][0] = 0;
-//         enemyTable[i][j][1] = 0;
-//     }
-//     // for (int j = 0; j < countLine && countLine != 0; j++)
-//     // {
-//     //     enemyTable[i][j][0] = diceArr[bufferColumn[j]]->getValue();
-//     //     enemyTable[i][j][1] = bufferColumn[j];
-//     //     diceArr[bufferColumn[j]]->setPosition(17 + i * 56 + 3, 118 - j * 52);
-//     // }
-// }
 
 void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
 {
@@ -99,64 +64,109 @@ void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
     }
 }
 
-// void buffer(int i, bool turn, int value, int (&playerTable)[3][3][4], int (&enemyTable)[3][3][4], Dice* (&diceArr)[200])
-// {
-//     if (turn)
-//     {
-//         removeDice(value, i, enemyTable, diceArr);
-//     } else
-//     {
-//         removeDice(value, i, playerTable, diceArr);
-//     }
-// }
+void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice, 
+    int &countDice, int &randomSeed, int &randomSeedDice, Dice* (&diceArr)[200], Clock &dilayEnemy,
+        RectangleShape &rollDice, Texture &texture, Clock &textureTimer)
+{
+    int x, y;
+    if (turn)
+    {
+        x = 130;
+        y = 710; 
+    } else 
+    {
+        x = 910;
+        y = 160;
+    }
+    if (dilayEnemy.getElapsedTime().asMilliseconds() > 1500)
+    {
+        rollDice.move({0.0f, 0.0f});
+        diceArr[countDice] = new Dice(countDice + randomSeed);
+        diceArr[countDice]->setPosition(x + randomBySeed(countDice + randomSeedDice, 0, 50), y + randomBySeed(countDice + randomSeedDice, 0, 50));
+        needNewDice = false;
+        dilayEnemy.restart();
+        return;
+    }
+    if (textureTimer.getElapsedTime().asMilliseconds() > 200)
+    {
+        rollDice.setPosition({x + randomBySeed(countDice + randomSeedDice, 0, 50), y + randomBySeed(countDice + randomSeedDice, 0, 50)});
+        std::string filename = "pic/dice" + std::to_string(random(1, 6)) + ".png";
+        if (texture.loadFromFile(filename)) 
+        {
+            rollDice.setTexture(&texture);
+            
+        }
+        if (moveRollDice)
+        {
+            rollDice.move({0.0f, 5.0f});
+            moveRollDice = !moveRollDice;
+        } else
+        {
+            rollDice.move({-0.0f, -.0f});
+            moveRollDice = !moveRollDice;
+        }
+        textureTimer.restart();
+    }
+}
 
 int main()
 {   
+    RectangleShape rollDice({100, 100});
+    rollDice.setFillColor(Color::Red); // Добавьте эту строку
+    Texture texture;
+
 // стол на котором будет лежать кубик
-    RectangleShape table({166, 166});
-    table.setFillColor(Color(71, 201, 148));
-    table.setPosition({17, 172});
+    RectangleShape tableEnemy({200, 200});
+    tableEnemy.setFillColor(Color(71, 201, 148));
+    tableEnemy.setPosition({890, 130});
+
+    RectangleShape tablePlayer({200, 200});
+    tablePlayer.setFillColor(Color(71, 201, 148));
+    tablePlayer.setPosition({110, 680});
 
 // настройка пространства игрока
     RectangleShape drawTablePlayer[3];
     for (int i = 0; i < 3; i++) 
     {
-        drawTablePlayer[i].setSize({54, 158});
+        drawTablePlayer[i].setSize({110, 340});
         drawTablePlayer[i].setFillColor(Color(71, 201, 148));
-        drawTablePlayer[i].setPosition({17 + i * 56, 342});
+        drawTablePlayer[i].setPosition({420 + i * 120, 610});
     }
 
 // настройка пространства врага
     RectangleShape drawTableEnemy[3];
     for (int i = 0; i < 3; i++) 
     {
-        drawTableEnemy[i].setSize({54, 158});
+        drawTableEnemy[i].setSize({110, 340});
         drawTableEnemy[i].setFillColor(Color(71, 201, 148));
-        drawTableEnemy[i].setPosition({17 + i * 56, 10});
+        drawTableEnemy[i].setPosition({420 + i * 120, 50});
     }
     
     int randomSeed = random(1, 100000);
+    int randomSeedDice = random(1, 100000);
+
     // unsigned int hightWin = 510;
     // unsigned int widthWin = 200;
-    unsigned int hightWin = 510;
-    unsigned int widthWin = 200;
+    unsigned int hightWin = 1000;
+    unsigned int widthWin = 1200;
     RenderWindow window(VideoMode({widthWin, hightWin}), "Dice game");
     
     int playerTable[3][3][4] = 
     { 
-        {{0, 0, 20, 344}, {0, 0, 20, 392}, {0, 0, 20, 444}},
-        {{0, 0, 76, 344}, {0, 0, 76, 392}, {0, 0, 76, 444}},
-        {{0, 0, 132, 344}, {0, 0, 132, 392}, {0, 0, 132, 444}}
+        {{0, 0, 425, 620}, {0, 0, 425, 730}, {0, 0, 425, 840}},
+        {{0, 0, 545, 620}, {0, 0, 545, 730}, {0, 0, 545, 840}},
+        {{0, 0, 665, 620}, {0, 0, 665, 730}, {0, 0, 665, 840}}
     };
     
     int enemyTable[3][3][4] = 
     {
-        {{0, 0, 20, 118}, {0, 0, 20, 66}, {0, 0, 20, 14}},
-        {{0, 0, 76, 118}, {0, 0, 76, 66}, {0, 0, 76, 14}},
-        {{0, 0, 132, 118}, {0, 0, 132, 66}, {0, 0, 132, 14}}
+        {{0, 0, 425, 280}, {0, 0, 425, 170}, {0, 0, 425, 60}},
+        {{0, 0, 545, 280}, {0, 0, 545, 170}, {0, 0, 545, 60}},
+        {{0, 0, 665, 280}, {0, 0, 665, 170}, {0, 0, 665, 60}}
     };
 
     Clock dilayEnemy;
+    Clock textureTimer;
 
     const int quantityDice = 200;
     Dice* diceArr[quantityDice] = {nullptr};
@@ -165,6 +175,8 @@ int main()
     int countDice = 1;
 
     bool needNewDice = true;
+
+    bool moveRollDice = true;
 
     bool turn = randomSeed % 2;
 
@@ -198,6 +210,7 @@ int main()
                                 countDice++;
                                 turn = false;
                                 needNewDice = true;
+                                dilayEnemy.restart();
                                 flag = false;
                             } 
                        }
@@ -232,12 +245,11 @@ int main()
             window.close();
         }
 
-        if (needNewDice)
+        if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500)
         {
-            diceArr[countDice] = new Dice(countDice + randomSeed);
-            diceArr[countDice]->setPosition(75, 230);
-            dilayEnemy.restart();
-            needNewDice = false;
+            rollDiceF(turn, needNewDice, moveRollDice, 
+                        countDice, randomSeed, randomSeedDice, diceArr, dilayEnemy,
+                            rollDice, texture, textureTimer);
         }
                       
         if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1500)
@@ -245,7 +257,7 @@ int main()
             bool flag = true;
             for (int i = 0; i < 3 && flag; i++)
             {
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < 3 && flag; j++)
                 {
                     if (enemyTable[i][j][0] == 0)
                     {
@@ -258,7 +270,7 @@ int main()
                         turn = true;
                         needNewDice = true;
                         flag = false;
-                        break;
+                        dilayEnemy.restart();
                     }
                 }
             }
@@ -268,9 +280,15 @@ int main()
         setPosMap(enemyTable, diceArr);
 
 // рисунки
-        window.clear(Color::Black);
+        window.clear(Color::White);
 
-        window.draw(table);
+        window.draw(tableEnemy);
+        window.draw(tablePlayer);
+
+        if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500 && dilayEnemy.getElapsedTime().asMilliseconds() < 1500)
+        {
+            window.draw(rollDice);
+        }
         
         for (int i = 0; i < 3; i++)
         {

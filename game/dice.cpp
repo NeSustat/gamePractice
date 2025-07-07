@@ -3,7 +3,8 @@
 
 Dice::Dice(int seed) : value(1){
     Dice::roll(seed);
-    shape.setSize(sf::Vector2f(50, 50));
+    shape.setSize(sf::Vector2f(100, 100));
+    shape.setFillColor(sf::Color::Red);
 
     std::string filename = "pic/dice" + std::to_string(value) + ".png";
     if (texture.loadFromFile(filename)) {
