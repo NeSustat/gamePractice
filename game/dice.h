@@ -4,6 +4,7 @@
 class Dice {
 private:
     sf::RectangleShape shape;
+    sf::Texture texture;
     int value;
 public:
     Dice(int seed);
