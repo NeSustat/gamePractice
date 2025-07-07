@@ -1,6 +1,8 @@
 #include "dice.h"
 #include <random>
 
+using namespace sf;
+
 Dice::Dice(int seed) : value(1){
     Dice::roll(seed);
     shape.setSize(sf::Vector2f(100, 100));
@@ -27,4 +29,13 @@ void Dice::setPosition(float x, float y){
 
 void Dice::draw(sf::RenderWindow &window) const{
     window.draw(shape);
+}
+
+void Dice::moveDice(float x, float y, int time){
+    sf::Clock clock;
+    clock.restart();
+    while (clock.getElapsedTime().asMilliseconds() < time){
+        shape.move({x, y});
+    }
+    shape.move({0, 0});
 }

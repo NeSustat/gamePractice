@@ -12,4 +12,5 @@ public:
     int getValue() const;
     void setPosition(float x, float y);
     void draw(sf::RenderWindow& window) const;
+    void moveDice(float x, float y, int time);
 };
