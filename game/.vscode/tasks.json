@@ -9,13 +9,15 @@
         "-std=c++17",
         "${file}",
         "dice.cpp",
+        "game_logic.cpp",
         "-o", "${fileDirname}/${fileBasenameNoExtension}.exe",
         "-I", "C:/SFML-3.0.0/include", 
         "-L", "C:/SFML-3.0.0/lib",
         "-mwindows",  
         "-lsfml-graphics",
         "-lsfml-window",
-        "-lsfml-system"
+        "-lsfml-system",
+        "-lsfml-audio"
       ],
       "group": {
         "kind": "build",

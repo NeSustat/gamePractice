@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp> 
 #include <random>
 #include "dice.h"
+#include "game_logic.h"
 
 using namespace sf;
 
@@ -19,42 +21,7 @@ int randomBySeed(int seed, int a, int b)
     return std::uniform_int_distribution<int>(a, b)(gen);
 }
 
-// определяет какие кубики надо удалить и сдвигает те который удалять не надо
-void removeDice(int value, int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
-{
-    int bufferColumn[3];
-    int countLine = 0;
-    bool found = false;
 
-    for (int j = 0; j < 3; j++)
-    {
-        if (table[i][j][0] != value && table[i][j][0] != 0)
-        {
-            bufferColumn[countLine] = table[i][j][1];
-            countLine++;
-        } else if (diceArr[table[i][j][1]] != nullptr && table[i][j][0] == value)
-        {
-            delete diceArr[table[i][j][1]];
-            diceArr[table[i][j][1]] = nullptr;
-            found = true;
-        }
-    }
-    if (!found)
-    {
-        return;
-    }
-    for (int j = 0; j < 3; j++) 
-    {
-        table[i][j][0] = 0;
-        table[i][j][1] = 0;
-    }
-    for (int j = 0; j < countLine && countLine != 0; j++)
-    {
-        table[i][j][0] = diceArr[bufferColumn[j]]->getValue();
-        table[i][j][1] = bufferColumn[j];
-        diceArr[bufferColumn[j]]->setPosition(table[i][j][2], table[i][j][3]);
-    }
-}
 
 // выставляет кубик в ячейки
 void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
@@ -71,7 +38,7 @@ void setPosMap(int (&table)[3][3][4], Dice* (&diceArr)[200])
 // отрисовывает вращение кубика при броске
 void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice, 
     int &countDice, int &randomSeed, int &randomSeedDice, Dice* (&diceArr)[200], Clock &dilayEnemy,
-        RectangleShape &rollDice, Texture &texture, Clock &textureTimer)
+        RectangleShape &rollDice, Texture &texture, Clock &textureTimer, Sound &diceRollSound)
 {
     int x, y;
     if (turn)
@@ -83,17 +50,23 @@ void rollDiceF(bool &turn, bool &needNewDice, bool &moveRollDice,
         x = 910;
         y = 160;
     }
-    if (dilayEnemy.getElapsedTime().asMilliseconds() > 1500)
+    static bool soundPlayed = false;
+    if (dilayEnemy.getElapsedTime().asMilliseconds() > 2000)
     {
         rollDice.move({0.0f, 0.0f});
         diceArr[countDice] = new Dice(countDice + randomSeed);
         diceArr[countDice]->setPosition(x + randomBySeed(countDice + randomSeedDice, 0, 50), y + randomBySeed(countDice + randomSeedDice, 0, 50));
         needNewDice = false;
         dilayEnemy.restart();
+        soundPlayed = false;
         return;
     }
     if (textureTimer.getElapsedTime().asMilliseconds() > 200)
     {
+        if (!soundPlayed) {
+            diceRollSound.play();
+            soundPlayed = true;
+        }
         rollDice.setPosition({x + randomBySeed(countDice + randomSeedDice, 0, 50), y + randomBySeed(countDice + randomSeedDice, 0, 50)});
         std::string filename = "pic/dice" + std::to_string(random(1, 6)) + ".png";
         if (texture.loadFromFile(filename)) 
@@ -138,7 +111,7 @@ int setColor(int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
     {
         if (arr[j][0] != 0)
         {
-            for (int k = 1; k <= arr[j][0]; k++)
+            for (int k = 1; k <= arr[j][0] && diceArr != nullptr; k++)
             {
                 diceArr[arr[j][k]]->setColor(arr[j][0]);
             }
@@ -151,7 +124,20 @@ int setColor(int i, int (&table)[3][3][4], Dice* (&diceArr)[200])
 // основная функция
 int main()
 {   
-    Font font("C:/Windows/Fonts/consola.ttf"); // шрифт
+    Font font("front/consola.ttf"); // шрифт
+
+    Music backGroundMusic("Music/backGr.ogg");
+    backGroundMusic.setLooping(true);
+    backGroundMusic.setVolume(10); 
+    backGroundMusic.play();
+
+    SoundBuffer rollDiceBuffer("Music/rollDice.wav");
+    Sound diceRollSound(rollDiceBuffer);
+    diceRollSound.setVolume(5);
+
+    SoundBuffer diceFellBuffer("Music/diceFell.wav");
+    Sound diceFellSound(diceFellBuffer);
+    diceFellSound.setVolume(5);
 
     RectangleShape rollDice({100, 100});
     rollDice.setFillColor(Color::White);
@@ -203,6 +189,9 @@ int main()
     RectangleShape endDisplay({widthWin, hightWin});
     endDisplay.setFillColor(Color(0, 0, 0, 200));
 
+    RectangleShape fullBlack({widthWin, hightWin});
+    fullBlack.setFillColor(Color(0, 0, 0, 255));
+
     // иконка приложения
     Image icon({32, 32});
     icon.loadFromFile("pic/dice.png");
@@ -234,6 +223,7 @@ int main()
     int countDice = 1;
 
     bool needNewDice = true;
+    bool flagStartGame = true;
 
     Text wonPlayer(font, "You won! :)", 72);
     wonPlayer.setFillColor(Color::White);
@@ -249,17 +239,46 @@ int main()
 
     int countScorePlayer = 0;
     Text scorePlayer(font, std::to_string(countScorePlayer), 100);
-    scorePlayer.setFillColor(Color::Black);
+    scorePlayer.setFillColor(Color::White);
     FloatRect boundsPlayer = scorePlayer.getLocalBounds();
     scorePlayer.setOrigin(boundsPlayer.getCenter());
     scorePlayer.setPosition({210, 600});
 
+    bool flagComplexity = true;
+    RectangleShape complexity({300, 130});
+    complexity.setFillColor(Color(0, 0, 0, 255));
+    complexity.setPosition({445, 400});
+    Text complexityText(font, "How much will you \nput on the line? 5?", 42);
+    complexityText.setFillColor(Color::White);
+    FloatRect boundsComplexityGame = complexityText.getLocalBounds();
+    complexityText.setOrigin(boundsComplexityGame.getCenter());
+    complexityText.setPosition({600, 465});
+
     int countScoreEnemy = 0;
     Text scoreEnemy(font, std::to_string(countScoreEnemy), 100);
-    scoreEnemy.setFillColor(Color::Black);
+    scoreEnemy.setFillColor(Color::White);
     FloatRect boundsEnemy = scoreEnemy.getLocalBounds();
     scoreEnemy.setOrigin(boundsEnemy.getCenter());
     scoreEnemy.setPosition({990, 410});
+
+    RectangleShape restartGame({300, 130});
+    restartGame.setFillColor(Color(0, 0, 0, 255));
+    restartGame.setPosition({445, 700});
+    Text restartGameText(font, "restart", 72);
+    restartGameText.setFillColor(Color::White);
+    FloatRect boundsRestartGame = restartGameText.getLocalBounds();
+    restartGameText.setOrigin(boundsRestartGame.getCenter());
+    restartGameText.setPosition({600, 765});
+
+    RectangleShape startGameButton({300, 130});
+    startGameButton.setFillColor(Color(0, 0, 0, 220));
+    startGameButton.setPosition({445, 700});
+    Text startGameText(font, "START", 72);
+    startGameText.setFillColor(Color::White);
+    FloatRect boundsStartGame = startGameText.getLocalBounds();
+    startGameText.setOrigin(boundsStartGame.getCenter());
+    startGameText.setPosition({600, 765});
+
 
     bool moveRollDice = true;
 
@@ -273,8 +292,34 @@ int main()
             {
                 window.close();
             }
+            if (event->is<Event::MouseButtonPressed>()){
 
-            if (event->is<Event::MouseButtonPressed>() && turn && !needNewDice)
+                Vector2i mousePos = Mouse::getPosition(window);
+                Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
+                if (startGameButton.getGlobalBounds().contains(mousePosF) && flagStartGame) {
+                    flagStartGame = false;
+                    dilayEnemy.restart();
+                }
+                if (complexity.getGlobalBounds().contains(mousePosF) && flagStartGame){
+                    switch (flagComplexity)
+                    {
+                    case true:
+                        complexityText.setString("How much will you \nput on the line? 10?");
+                        complexityText.setFillColor(Color::Red);
+                        flagComplexity = false;
+                        break;
+                    case false:
+                        complexityText.setString("How much will you \nput on the line? 5?");
+                        complexityText.setFillColor(Color::White);
+                        flagComplexity = true;
+                    default:
+                        break;
+                    }
+                }
+            }
+
+            if (event->is<Event::MouseButtonPressed>() && turn && !needNewDice && !flagStartGame)
             {   
                 Vector2i mousePos = Mouse::getPosition(window);
                 Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
@@ -289,9 +334,8 @@ int main()
                             {
                                 playerTable[i][j][0] = diceArr[countDice]->getValue();
                                 playerTable[i][j][1] = countDice;
-                                // diceArr[countDice]->setPosition(playerTable[i][j][2], playerTable[i][j][3]);
                                 removeDice(diceArr[countDice]->getValue(), i, enemyTable, diceArr);
-                                // setPosMap(playerTable, diceArr);
+                                diceFellSound.play();
                                 countDice++;
                                 turn = false;
                                 needNewDice = true;
@@ -302,8 +346,61 @@ int main()
                     }
                 }
             }
+            if (event->is<Event::MouseButtonPressed>())
+            {
+                Vector2i mousePos = Mouse::getPosition(window);
+                Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+                if (complexity.getGlobalBounds().contains(mousePosF) && (coutPlayerWon == 9 || countEnemyWon == 9)){
+                    complexityText.setString("How much will you \nput on the line? 5?");
+                    complexityText.setFillColor(Color::White);
+                    flagComplexity = true;
+                    switch (flagComplexity)
+                    {
+                    case true:
+                        complexityText.setString("How much will you \nput on the line? 10?");
+                        complexityText.setFillColor(Color::Red);
+                        flagComplexity = false;
+                        break;
+                    case false:
+                        complexityText.setString("How much will you \nput on the line? 5?");
+                        complexityText.setFillColor(Color::White);
+                        flagComplexity = true;
+                    default:
+                        break;
+                    }
+                }
+                if (restartGame.getGlobalBounds().contains(mousePosF) && (coutPlayerWon == 9 || countEnemyWon == 9)){
+                    for (int i = 0; i < 3; i++){
+                        for (int j = 0; j < 3; j++){
+                            playerTable[i][j][0] = 0;
+                            playerTable[i][j][1] = 0;
+                            enemyTable[i][j][0] = 0;
+                            enemyTable[i][j][1] = 0;
+                        }
+                    }
+                    for (int i = 0; i < quantityDice; i++){
+                        if (diceArr[i] != nullptr)
+                        {
+                            delete diceArr[i];
+                            diceArr[i] = nullptr;
+                        }
+                    }
+                    countDice = 1;    
+                    int randomSeed = random(1, 100000);
+                    int randomSeedDice = random(1, 100000);
+                    turn = randomSeed % 2;
+                    needNewDice = true;
+                    dilayEnemy.restart();
+                    countScorePlayer = 0;
+                    countScoreEnemy = 0;
+                    coutPlayerWon = 0;
+                    countEnemyWon = 0;
+                    scorePlayer.setString(std::to_string(countScorePlayer));
+                    scoreEnemy.setString(std::to_string(countScoreEnemy));
+                }
+            }
         }
-        if (coutPlayerWon != 9 && countEnemyWon != 9)
+        if (coutPlayerWon != 9 && countEnemyWon != 9 && !flagStartGame)
         {
             coutPlayerWon = 0;
             countEnemyWon = 0;
@@ -338,35 +435,22 @@ int main()
             boundsEnemy = scoreEnemy.getLocalBounds();
             scoreEnemy.setOrigin(boundsEnemy.getCenter());
 
-            if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500)
-            {
+            if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500 && !flagStartGame)
+            {   
                 rollDiceF(turn, needNewDice, moveRollDice, 
                             countDice, randomSeed, randomSeedDice, diceArr, dilayEnemy,
-                                rollDice, texture, textureTimer);
+                                rollDice, texture, textureTimer, diceRollSound);
             }
                         
             if (!turn && !needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 1000)
             {
-                bool flag = true;
-                for (int j = 0; j < 3 && flag; j++)
-                {
-                    for (int i = 0; i < 3 && flag; i++)
-                    {
-                        if (enemyTable[i][j][0] == 0)
-                        {
-                            enemyTable[i][j][0] = diceArr[countDice]->getValue();
-                            enemyTable[i][j][1] = countDice;
-                            // diceArr[countDice]->setPosition(enemyTable[i][j][2], enemyTable[i][j][3]);
-                            removeDice(diceArr[countDice]->getValue(), i, playerTable, diceArr);
-                            // setPosMap(enemyTable, diceArr);
-                            countDice++;
-                            turn = true;
-                            needNewDice = true;
-                            flag = false;
-                            dilayEnemy.restart();
-                        }
-                    }
-                }
+                if (flagComplexity){
+                    enemyTurn(enemyTable, playerTable, diceArr, turn, needNewDice, dilayEnemy, countDice);
+                    diceFellSound.play();
+                } else{
+                    brainEnemy(enemyTable, playerTable, diceArr, countDice, turn, needNewDice, dilayEnemy);
+                    diceFellSound.play();
+                } 
             }
 
             setPosMap(playerTable, diceArr);
@@ -374,52 +458,66 @@ int main()
         }
 
 // рисунки
-        window.clear(Color::White);
+        window.clear(Color::Black);
+        if (flagStartGame){
+            window.draw(fullBlack);
+            window.draw(startGameButton);
+            window.draw(startGameText);
+            window.draw(complexity);
+            window.draw(complexityText);
+        } else {
+            window.draw(tableEnemy);
+            window.draw(tablePlayer);
 
-        window.draw(tableEnemy);
-        window.draw(tablePlayer);
+            if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500 && dilayEnemy.getElapsedTime().asMilliseconds() < 2100)
+            {
+                window.draw(rollDice);
+            }
+            
+            for (int i = 0; i < 3; i++)
+            {
+                window.draw(drawTablePlayer[i]);
+                window.draw(drawTableEnemy[i]);
+            }
 
-        if (needNewDice && dilayEnemy.getElapsedTime().asMilliseconds() > 500 && dilayEnemy.getElapsedTime().asMilliseconds() < 1500)
-        {
-            window.draw(rollDice);
-        }
-        
-        for (int i = 0; i < 3; i++)
-        {
-            window.draw(drawTablePlayer[i]);
-            window.draw(drawTableEnemy[i]);
-        }
+            if (!needNewDice && diceArr[countDice] != nullptr) {
+                diceArr[countDice]->draw(window);
+            }
 
-        if (!needNewDice && diceArr[countDice] != nullptr) {
-            diceArr[countDice]->draw(window);
-        }
-
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if (playerTable[i][j][0] != 0 && diceArr[playerTable[i][j][1]] != nullptr) {
-                    diceArr[playerTable[i][j][1]]->draw(window);
-                }
-                if (enemyTable[i][j][0] != 0 && diceArr[enemyTable[i][j][1]] != nullptr) {
-                    diceArr[enemyTable[i][j][1]]->draw(window);
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (playerTable[i][j][0] != 0 && diceArr[playerTable[i][j][1]] != nullptr) {
+                        diceArr[playerTable[i][j][1]]->draw(window);
+                    }
+                    if (enemyTable[i][j][0] != 0 && diceArr[enemyTable[i][j][1]] != nullptr) {
+                        diceArr[enemyTable[i][j][1]]->draw(window);
+                    }
                 }
             }
-        }
-        window.draw(scorePlayer);
-        window.draw(scoreEnemy);
-        if ((coutPlayerWon == 9 || countEnemyWon == 9) || true)
-        {
-            window.draw(endDisplay);
-            if (countScoreEnemy == countScorePlayer)
+            window.draw(scorePlayer);
+            window.draw(scoreEnemy);
+            if (coutPlayerWon == 9 || countEnemyWon == 9)
             {
-                window.draw(draw);
-            } else if (countScoreEnemy > countScorePlayer)
-            {
-                window.draw(wonEnemy);
-            } else 
-            {
-                window.draw(wonPlayer);
+                window.draw(fullBlack);
+                window.draw(restartGame);
+                window.draw(endDisplay);
+                window.draw(complexity);
+                window.draw(complexityText);
+                if (countScoreEnemy == countScorePlayer)
+                {
+                    window.draw(draw);
+                } else if (countScoreEnemy > countScorePlayer)
+                {
+                    window.draw(wonEnemy);
+                } else 
+                {
+                    window.draw(wonPlayer);
+                }
+                window.draw(restartGameText);
+
             }
         }
+
         window.display();
     }
     for (int i = 0; i < quantityDice; i++) {
