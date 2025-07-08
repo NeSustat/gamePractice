@@ -186,8 +186,6 @@ int main()
     unsigned int hightWin = 1000;
     unsigned int widthWin = 1200;
     RenderWindow window(VideoMode({widthWin, hightWin}), "Dice game");
-    RectangleShape endDisplay({widthWin, hightWin});
-    endDisplay.setFillColor(Color(0, 0, 0, 200));
 
     RectangleShape fullBlack({widthWin, hightWin});
     fullBlack.setFillColor(Color(0, 0, 0, 255));
@@ -350,25 +348,6 @@ int main()
             {
                 Vector2i mousePos = Mouse::getPosition(window);
                 Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-                if (complexity.getGlobalBounds().contains(mousePosF) && (coutPlayerWon == 9 || countEnemyWon == 9)){
-                    complexityText.setString("How much will you \nput on the line? 5?");
-                    complexityText.setFillColor(Color::White);
-                    flagComplexity = true;
-                    switch (flagComplexity)
-                    {
-                    case true:
-                        complexityText.setString("How much will you \nput on the line? 10?");
-                        complexityText.setFillColor(Color::Red);
-                        flagComplexity = false;
-                        break;
-                    case false:
-                        complexityText.setString("How much will you \nput on the line? 5?");
-                        complexityText.setFillColor(Color::White);
-                        flagComplexity = true;
-                    default:
-                        break;
-                    }
-                }
                 if (restartGame.getGlobalBounds().contains(mousePosF) && (coutPlayerWon == 9 || countEnemyWon == 9)){
                     for (int i = 0; i < 3; i++){
                         for (int j = 0; j < 3; j++){
@@ -386,8 +365,8 @@ int main()
                         }
                     }
                     countDice = 1;    
-                    int randomSeed = random(1, 100000);
-                    int randomSeedDice = random(1, 100000);
+                    randomSeed = random(1, 100000);
+                    randomSeedDice = random(1, 100000);
                     turn = randomSeed % 2;
                     needNewDice = true;
                     dilayEnemy.restart();
@@ -397,6 +376,7 @@ int main()
                     countEnemyWon = 0;
                     scorePlayer.setString(std::to_string(countScorePlayer));
                     scoreEnemy.setString(std::to_string(countScoreEnemy));
+                    flagStartGame = true;
                 }
             }
         }
@@ -500,9 +480,6 @@ int main()
             {
                 window.draw(fullBlack);
                 window.draw(restartGame);
-                window.draw(endDisplay);
-                window.draw(complexity);
-                window.draw(complexityText);
                 if (countScoreEnemy == countScorePlayer)
                 {
                     window.draw(draw);
