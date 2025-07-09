@@ -185,7 +185,7 @@ int main()
     // unsigned int widthWin = 200;
     unsigned int hightWin = 1000;
     unsigned int widthWin = 1200;
-    RenderWindow window(VideoMode({widthWin, hightWin}), "Dice game");
+    RenderWindow window(VideoMode({widthWin, hightWin}), "Dice Clash");
 
     RectangleShape fullBlack({widthWin, hightWin});
     fullBlack.setFillColor(Color(0, 0, 0, 255));
