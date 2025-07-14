@@ -246,7 +246,7 @@ int main()
     RectangleShape complexity({300, 130});
     complexity.setFillColor(Color(0, 0, 0, 255));
     complexity.setPosition({445, 400});
-    Text complexityText(font, "How much will you \nput on the line? 5?", 42);
+    Text complexityText(font, "Your bet 5?", 42);
     complexityText.setFillColor(Color::White);
     FloatRect boundsComplexityGame = complexityText.getLocalBounds();
     complexityText.setOrigin(boundsComplexityGame.getCenter());
@@ -262,7 +262,7 @@ int main()
     RectangleShape restartGame({300, 130});
     restartGame.setFillColor(Color(0, 0, 0, 255));
     restartGame.setPosition({445, 700});
-    Text restartGameText(font, "restart", 72);
+    Text restartGameText(font, "RESTART", 72);
     restartGameText.setFillColor(Color::White);
     FloatRect boundsRestartGame = restartGameText.getLocalBounds();
     restartGameText.setOrigin(boundsRestartGame.getCenter());
@@ -303,12 +303,12 @@ int main()
                     switch (flagComplexity)
                     {
                     case true:
-                        complexityText.setString("How much will you \nput on the line? 10?");
+                        complexityText.setString("Your bet 10?");
                         complexityText.setFillColor(Color::Red);
                         flagComplexity = false;
                         break;
                     case false:
-                        complexityText.setString("How much will you \nput on the line? 5?");
+                        complexityText.setString("Your bet 5?");
                         complexityText.setFillColor(Color::White);
                         flagComplexity = true;
                     default:

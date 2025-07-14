@@ -4,13 +4,16 @@
     {
       "label": "Build SFML",
       "type": "shell",
-      "command": "g++",
+      "command": "cmd",
       "args": [
+         "/c",
+        "windres icon.rc -o icon.o && g++",
         "-std=c++17",
         "${file}",
         "dice.cpp",
         "game_logic.cpp",
-        "-o", "${fileDirname}/${fileBasenameNoExtension}.exe",
+        "icon.o",
+        "-o", "${fileDirname}/DiceClash.exe",
         "-I", "C:/SFML-3.0.0/include", 
         "-L", "C:/SFML-3.0.0/lib",
         "-mwindows",  
